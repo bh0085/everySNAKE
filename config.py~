@@ -31,84 +31,17 @@ Functions:
 
 '''
 
+import compbio.utils.remote_utils 
 import os, pipes, socket, subprocess as spc
-import inspect
 
-root  =os.path.dirname( os.path.abspath(inspect.stack()[0][1]))
-if not os.path.isdir(os.path.join(root, 'data')):
-  raise Exception('''
-Your everysnake path has no link to a data directory
+#TALK TO ENVIRON AND GET PATH SETTINGS
+root = os.environ['COMPBIO_PATH']
+compbio_paths = [root,
+                 os.path.join(*(list(os.path.split(root)[:-1]) + ['cb']))]
+roots = compbio_paths +\
+    [os.environ['PROGRAMMING_PATH'],
+     os.environ['ZHANG_PATH']]
 
-run (for example)
-ln -s /data {0}/data
-
-and then try loading this module.
-'''.format(root));
-
-
-
-#For god's sake, just ignore this stuff. Its legacy code that
-#I haven't decided the correct way to abstract yet.
-use_extra_paths = True if os.environ.has_key('COMPBIO_PATH')\
-    else False
-if use_extra_paths:
-  compbio_paths = [root,
-                   os.environ['COMPBIO_PATH'],
-                   os.path.join(*(list(os.path.split(root)[:-1]) + ['cb'])),
-                   os.environ['PROGRAMMING_PATH'],
-                   os.environ['ZHANG_PATH']]
-else:
-  compbio_paths = [root]
-
-
-print use_extra_paths
-print compbio_paths
-
-#works but not in all of its glory...
-def dataPath(url, make = True):
-  #god this is terrible. I use this script every day
-  #but seem to have not modified it since I first learned python.
-  #
-  # fml.
-  #
-  if url.count(':') == 0:
-    host_name = 'localhost'
-    volume_name = 'cb'
-    localpath = url
-  elif url.count(':') == 2:
-    host_name = url.split(':')[0]
-    volume_name = url.split(':')[1]
-    localpath = url.split(':')[2]
-
-  if host_name == '':
-    host_name = 'localhost'
-  if volume_name == '':
-    volume_name = 'cb'
-
-  if volume_name == '/':volume_prefix = '/'
-  elif volume_name == 'cb':volume_prefix = globals()['root']
-  elif volume_name == '~':volum_prefix = os.environ['HOME']
-  else: volume_prefix = os.path.join('/Volumes', volume_name)
-
-  if host_name == socket.gethostname() or \
-        host_name == 'localhost':
-    path = os.path.join(os.path.join(volume_prefix,'data'), localpath)
-    if make and not os.path.isdir(os.path.dirname(path)):
-      os.makedirs(os.path.dirname(path))
-
-  else:
-    #ok, so this is the only place where we have any external deps.
-    #if someone wants to call it without remote_utils... well, screw em.
-    import compbio.utils.remote_utils 
-    rutils =  compbio.utils.remote_utils 
-    path = rutils.remote_datapath(localpath, 
-                                  host_name, 
-                                  volume = volume_name)
-  return path
-
-
-
-#Probably broken.
 def remotePath(abspath, host = 'tin', root = 'comp'):
   '''Get the location of the a file on the remote file system
 from one of the roots ['compbio', 'programming']'''
@@ -139,12 +72,11 @@ print config.{1}('{0}', absolute = True)
       communicate()[0]
   return out.strip()
 
-#works
 def absPath(localPath):
   global root
   return os.path.join(root, localPath)
 
-#high tech - probably broken.
+
 def relPath(path):
   '''
 Get a short version of the given path relative to any one of the root paths.
@@ -152,8 +84,6 @@ Get a short version of the given path relative to any one of the root paths.
   return min([ os.path.relpath(path, r) for r in roots], 
              key = lambda x: len(x))
 
-
-#required for remote path. useless to anyone but me..
 def compPath(path, absolute = False):
   if absolute:
     return os.path.join(os.environ['COMPBIO_PATH'], path)
@@ -161,28 +91,49 @@ def compPath(path, absolute = False):
     return os.path.relpath(os.path.abspath(path), \
                              os.environ['COMPBIO_PATH']) 
   
-#required for remote path. useless to anyone but me.
 def progPath(path, absolute = False):
   if absolute:
     return os.path.join(os.environ['PROGRAMMING_PATH'], path)
   else:
     return os.path.relpath(os.path.abspath(path), \
                              os.environ['PROGRAMMING_PATH']) 
-
-#required  
+  
 def getTempPath():
   return dataPath('temp')
+def dataPath(url, make = True):
+  if url.count(':') == 0:
+    host_name = 'localhost'
+    volume_name = 'cb'
+    localpath = url
+  elif url.count(':') == 2:
+    host_name = url.split(':')[0]
+    volume_name = url.split(':')[1]
+    localpath = url.split(':')[2]
 
+  if host_name == '':
+    host_name = 'localhost'
+  if volume_name == '':
+    volume_name = 'cb'
+
+  if volume_name == '/':volume_prefix = '/'
+  elif volume_name == 'cb':volume_prefix = globals()['root']
+  elif volume_name == '~':volum_prefix = os.environ['HOME']
+  else: volume_prefix = os.path.join('/Volumes', volume_name)
+  if host_name == socket.gethostname() or \
+        host_name == 'localhost':
+    path = os.path.join(os.path.join(volume_prefix,'data'), localpath)
+    if make and not os.path.isdir(os.path.dirname(path)):
+      os.makedirs(os.path.dirname(path))
+  else:
+    rutils =  compbio.utils.remote_utils 
+    path = rutils.remote_datapath(localpath, 
+                                  host_name, 
+                                  volume = volume_name)
+  return path
 
 def dataURL(localpath, volume_name = 'cb',  host = 'localhost'):
   return ':'.join([host, volume_name, localpath]) 
 
-
-#wow, this is some useful looking shit.
-#I wonder what all this shit is supposed to do.
-#
-#whichever asshole wrote this really should have taken 
-#ten seconds to write some fucking comments.
 def sqlitePath(dbname, **kwargs):
   url = dataURL(os.path.join('dbs',dbname+'.sqlite'),**kwargs)
   return 'sqlite:///'+dataPath(url)
@@ -197,8 +148,6 @@ def postgresPath(dbname, host = None):
   else:
     return 'postgres://bh0085@localhost/'+dbname
 
-#now this just seems like bullshit.
-#
 def scriptInputPath(name):
   return os.path.join(os.path.join(globals()['root'], 
                                    'scripts/scr_inputs'),
