@@ -61,9 +61,6 @@ else:
   compbio_paths = [root]
 
 
-print use_extra_paths
-print compbio_paths
-
 #works but not in all of its glory...
 def dataPath(url, make = True):
   #god this is terrible. I use this script every day
