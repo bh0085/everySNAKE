@@ -1,0 +1,30 @@
+Welcome to everySNAKE, the crappy package of python computational 
+biology tools upon which everyVECTOR will depend.
+
+Actually, at this point there is going to be some redundancy between this
+repo and the 'tal/utils' directory in the everyVECTOR directory installed 
+with the webapp itself. 
+
+In the future that will all be eliminated. As a general rule, 
+everySNAKE will consist of:
+
+1 - Wrappers around external utilities (such as MUSCLE or CLUSTAL)
+2 - Convenience libraries for mapping external databases onto SQlite etc.
+3 - Plotting libraries (including libraries that will be useful in exporting
+  publication quality figurese from webapps as well.
+4 - Generic analytics modules unsuitable upon which not only everyVECTOR
+  but other tools that the EV team writes will lean.
+
+While the everyVECTOR repo ('tal') is the proper place for:
+
+1 - Python controllers and config necessary for webserver installation and
+  non-analytic webapp usage.
+2 - Javascript, HTML [MAKO] files necessary for the same.
+
+Neither place is appropriate for:
+
+1 - everyVECTOR plugins. They should live in other places and follow the
+  plugin guidelines on the EV wiki.
+
+Enjoy!
+-The EveryVECTOR team.
