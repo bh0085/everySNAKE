@@ -3,12 +3,13 @@ Basically, this module contains a substandard bunch of hacks to
 manage paths etc in accordance with the percieved layout of the users
 filename.
 
-It seems to mostly just require the users environment variable:
+It would love to have environment variables such as:
 
-$COMPBIO_PATH
+$COMPBIO_PATH, $PROGRAMMING_PATH, ...
 
-to be set and from this point, it can look up things like the path
+to be set so that it can look up things like the path
 for generic data:
+
 [$COMPBIO_PATH/data/...] and for example, script outputs:
 [$COMPBIO_PATH/data/outputs/...], sqlite databases etc!
 
@@ -17,13 +18,13 @@ Of note is the ability to look up paths on a remote server
 a script same as it would locally. 
 
 Functions:
+  dataPath:    Return the datapath of a relative path or URL.
+  dataURL:     Return the URL of a relative data path on a host/volume.
+
   remotePath:  Find a datapath on a remote host
   compPath:    Find the path of a file in the compbio dir.
   getTempPath: Find the temporary data file directory.
-  
-  dataPath:    Return the datapath of a relative path or URL.
-  dataURL:     Return the URL of a relative data path on a host/volume.
-  
+
   scriptInputPath:    Default inputs for a script.
   scriptOutputPath:   Default outputs for a script.
 
@@ -34,6 +35,7 @@ Functions:
 import os, pipes, socket, subprocess as spc
 import inspect
 
+#check for a link to your computer's data storage location
 root  =os.path.dirname( os.path.abspath(inspect.stack()[0][1]))
 if not os.path.isdir(os.path.join(root, 'data')):
   raise Exception('''
