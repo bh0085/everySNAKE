@@ -1,4 +1,4 @@
-from import config as cfg, memo as mem
+import everySNAKE.config as cfg, everySNAKE.utils.memo as mem
 import track
 from numpy import *
 import os

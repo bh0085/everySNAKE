@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>utils Package &mdash; everySnake .1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="everySnake .1 documentation" href="../index.html" />
+    <link rel="up" title="everySNAKE Package" href="everySNAKE.html" />
+    <link rel="prev" title="silvana Package" href="everySNAKE.peoplefuns.silvana.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="everySNAKE.peoplefuns.silvana.html" title="silvana Package"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">everySnake .1 documentation</a> &raquo;</li>
+          <li><a href="everySNAKE.html" accesskey="U">everySNAKE Package</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="utils-package">
+<h1>utils Package<a class="headerlink" href="#utils-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2><tt class="xref py py-mod docutils literal"><span class="pre">utils</span></tt> Package<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-everySNAKE.utils"></span><p>Utilities to make the computational biology apparatus hum!</p>
+<p>CONTENTS:
+memo.py  -  Cache function output flexibly.</p>
+</div>
+<div class="section" id="module-everySNAKE.utils.memo">
+<span id="memo-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">memo</span></tt> Module<a class="headerlink" href="#module-everySNAKE.utils.memo" title="Permalink to this headline">¶</a></h2>
+<p>Write variables to common blocks and the hardrive to
+increase efficiency of frequently called functions</p>
+<p>#Basically, getorset can do three things
+#  1: SET the stored value for the output of a function
+#  2: GET the stored value for the output of function
+#  3: UPDATE a new value without calling the function</p>
+<dl class="function">
+<dt id="everySNAKE.utils.memo.claim_reset">
+<tt class="descclassname">everySNAKE.utils.memo.</tt><tt class="descname">claim_reset</tt><big>(</big><big>)</big><a class="reference internal" href="../_modules/everySNAKE/utils/memo.html#claim_reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#everySNAKE.utils.memo.claim_reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="everySNAKE.utils.memo.getOrSet">
+<tt class="descclassname">everySNAKE.utils.memo.</tt><tt class="descname">getOrSet</tt><big>(</big><em>function</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../_modules/everySNAKE/utils/memo.html#getOrSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#everySNAKE.utils.memo.getOrSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>The workhorse of the memo module.</p>
+<p>Intended usage is basically:</p>
+<p>def getSomeComputedValue( [...=...], <a href="#id2"><span class="problematic" id="id3">**</span></a>kwargs):</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>def setSomeComputedValue(<a href="#id4"><span class="problematic" id="id5">**</span></a>kwargs):</dt>
+<dd>...
+[Do some expensive computation here]
+...
+return [result of expensive computation]</dd>
+<dt>return memo.getOrSet(setSomeComputedValue,      <a href="#id6"><span class="problematic" id="id7">**</span></a>mem.rc(kwargs, </dt>
+<dd>name=[some function of kwargs or other inputs],
+[...]
+))</dd>
+</dl>
+</div></blockquote>
+<p>Where memo.getOrSet simply serves to wrap and save output from  
+setSomeComputedValue so that later calls to getSomeComputedValue 
+will not have to recompute it.</p>
+<p>KWARGS:
+reset    [False] -   reset &#8220;function&#8221;
+register [&#8216;a&#8217;]   -   reserved spot for the current output in memory.
+name     [register]- reserved sport for the current output on disk.
+hardcopy [True]  -   save a hardcopy on disk.
+np       [False] -   save data in an efficient numpy serialized form. (good for arrays)
+update   [None]  -   if non-null, instead of calling function, use mock output</p>
+<blockquote>
+<div>in update.</div></blockquote>
+<dl class="docutils">
+<dt>hard_reset [False]-  demand user input to actually reset the function.</dt>
+<dd>(intended for tricky to compute functions)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="everySNAKE.utils.memo.rc">
+<tt class="descclassname">everySNAKE.utils.memo.</tt><tt class="descname">rc</tt><big>(</big><em>kw_new</em>, <em>kw_old={}</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#everySNAKE.utils.memo.rc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconcile new keywords into a kwargs object and check for any
+forced resets in the active routine.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="everySNAKE.utils.memo.reconcile">
+<tt class="descclassname">everySNAKE.utils.memo.</tt><tt class="descname">reconcile</tt><big>(</big><em>kw_new</em>, <em>kw_old={}</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../_modules/everySNAKE/utils/memo.html#reconcile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#everySNAKE.utils.memo.reconcile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconcile new keywords into a kwargs object and check for any
+forced resets in the active routine.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="everySNAKE.utils.memo.sr">
+<tt class="descclassname">everySNAKE.utils.memo.</tt><tt class="descname">sr</tt><big>(</big><em>kw_new</em>, <em>kw_old={}</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#everySNAKE.utils.memo.sr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconcile new keywords into a kwargs object and check for any
+forced resets in the active routine. If reset_level is 2, set 
+the reset level to zero in order to halt the reset cascade.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="everySNAKE.utils.memo.sub_reconcile">
+<tt class="descclassname">everySNAKE.utils.memo.</tt><tt class="descname">sub_reconcile</tt><big>(</big><em>kw_new</em>, <em>kw_old={}</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="../_modules/everySNAKE/utils/memo.html#sub_reconcile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#everySNAKE.utils.memo.sub_reconcile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reconcile new keywords into a kwargs object and check for any
+forced resets in the active routine. If reset_level is 2, set 
+the reset level to zero in order to halt the reset cascade.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">utils Package</a><ul>
+<li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">utils</span></tt> Package</a></li>
+<li><a class="reference internal" href="#module-everySNAKE.utils.memo"><tt class="docutils literal"><span class="pre">memo</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="everySNAKE.peoplefuns.silvana.html"
+                        title="previous chapter">silvana Package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/api/everySNAKE.utils.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="everySNAKE.peoplefuns.silvana.html" title="silvana Package"
+             >previous</a> |</li>
+        <li><a href="../index.html">everySnake .1 documentation</a> &raquo;</li>
+          <li><a href="everySNAKE.html" >everySNAKE Package</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Ben Holmes.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

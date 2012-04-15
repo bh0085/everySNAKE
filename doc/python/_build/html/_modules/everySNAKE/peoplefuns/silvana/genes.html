@@ -1,0 +1,276 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>everySNAKE.peoplefuns.silvana.genes &mdash; everySnake .1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <link rel="top" title="everySnake .1 documentation" href="../../../../index.html" />
+    <link rel="up" title="everySNAKE" href="../../../everySNAKE.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">everySnake .1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../../everySNAKE.html" accesskey="U">everySNAKE</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for everySNAKE.peoplefuns.silvana.genes</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">everySNAKE.config</span> <span class="kn">as</span> <span class="nn">cfg</span><span class="o">,</span> <span class="nn">everySNAKE.utils.memo</span> <span class="kn">as</span> <span class="nn">mem</span>
+<span class="kn">import</span> <span class="nn">track</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="n">mousefile</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataPath</span><span class="p">(</span><span class="s">&#39;silvana/mouse_genes.bed&#39;</span><span class="p">)</span>
+<span class="n">peakfile</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataPath</span><span class="p">(</span><span class="s">&#39;silvana/dhs.narrowPeak&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="getTrackChrPromoters"><a class="viewcode-back" href="../../../../api/everySNAKE.peoplefuns.silvana.html#everySNAKE.peoplefuns.silvana.genes.getTrackChrPromoters">[docs]</a><span class="k">def</span> <span class="nf">getTrackChrPromoters</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Get all of the forward promoter from a bed file</span>
+<span class="sd">on a given chromosome&gt;</span>
+
+<span class="sd">kwargs</span>
+<span class="sd">num:   chromosome number </span>
+<span class="sd">fname: bedfile path</span>
+
+<span class="sd">returns</span>
+<span class="sd">a list of the coordinates of each forward promoter.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">setTrackChrPromoters</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;fname&#39;</span><span class="p">,</span> <span class="n">mousefile</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;num&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">track</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname</span><span class="p">);</span>
+        <span class="n">chromosome_data</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&#39;chr{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">))</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span><span class="n">r</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="n">chromosome_data</span><span class="p">)]</span>
+        <span class="n">fwd_genes</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s">&#39;strand&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">fwd_starts</span> <span class="o">=</span><span class="nb">dict</span><span class="p">([(</span><span class="n">e</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span><span class="n">e</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">fwd_genes</span><span class="p">])</span>
+        <span class="n">fwd_promoters</span><span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="p">[</span><span class="n">v</span> <span class="o">-</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">v</span> <span class="o">-</span> <span class="mi">100</span><span class="p">])</span>
+                             <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">fwd_starts</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="n">fwd_promoters</span>
+    
+    <span class="k">return</span> <span class="n">mem</span><span class="o">.</span><span class="n">getOrSet</span><span class="p">(</span><span class="n">setTrackChrPromoters</span><span class="p">,</span>
+                        <span class="n">onfail</span> <span class="o">=</span> <span class="s">&#39;compute&#39;</span><span class="p">,</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;{0}_{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;fname&#39;</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">mousefile</span><span class="p">)),</span>
+                                                <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;num&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+
+</div>
+<div class="viewcode-block" id="getTrackChrGenes"><a class="viewcode-back" href="../../../../api/everySNAKE.peoplefuns.silvana.html#everySNAKE.peoplefuns.silvana.genes.getTrackChrGenes">[docs]</a><span class="k">def</span> <span class="nf">getTrackChrGenes</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Get all of th genes from a bed file</span>
+<span class="sd">on a given chromosome.</span>
+
+<span class="sd">kwargs</span>
+<span class="sd">num:   chromosome number </span>
+<span class="sd">fname: bedfile path</span>
+
+<span class="sd">returns</span>
+<span class="sd">a list of attributes for every gene.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">setTrackChrGenes</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;fname&#39;</span><span class="p">,</span> <span class="n">mousefile</span><span class="p">)</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;num&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">track</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname</span><span class="p">);</span>
+        <span class="n">chromosome_data</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s">&#39;chr{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">))</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span><span class="n">r</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="n">chromosome_data</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">rows</span>
+    
+    <span class="k">return</span> <span class="n">mem</span><span class="o">.</span><span class="n">getOrSet</span><span class="p">(</span><span class="n">setTrackChrGenes</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">mem</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span> <span class="n">kwargs</span><span class="p">,</span>
+                                  <span class="n">onfail</span> <span class="o">=</span> <span class="s">&#39;compute&#39;</span><span class="p">,</span>
+                                  <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;{0}_{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;fname&#39;</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">mousefile</span><span class="p">)),</span>
+                                                          <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;num&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                                  <span class="p">))</span>
+
+
+</div>
+<div class="viewcode-block" id="getPeaks"><a class="viewcode-back" href="../../../../api/everySNAKE.peoplefuns.silvana.html#everySNAKE.peoplefuns.silvana.genes.getPeaks">[docs]</a><span class="k">def</span> <span class="nf">getPeaks</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Get all of peaks from a narrowpeak file </span>
+<span class="sd">on all chromosomes.</span>
+
+<span class="sd">kwargs</span>
+<span class="sd">none:</span>
+
+<span class="sd">returns</span>
+<span class="sd">a list of peaks.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">setPeaks</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">peaks</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">peakfile</span><span class="p">)</span> <span class="k">as</span> <span class="n">pf</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">pf</span><span class="o">.</span><span class="n">readlines</span><span class="p">():</span>
+                <span class="n">grps</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\t</span><span class="s">&#39;</span><span class="p">)</span>
+                <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;chrom&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;start&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;end&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;name&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;score&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;strand&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;signalValue&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;pValue&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;qValue&#39;</span><span class="p">,</span>
+                    <span class="s">&#39;peak&#39;</span><span class="p">]</span>
+
+            <span class="c">#note, peak is a zero based offset from start</span>
+                <span class="n">hit</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span><span class="n">grps</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+                <span class="n">hit</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hit</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">])</span>
+                <span class="n">hit</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hit</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">])</span>
+                <span class="n">hit</span><span class="p">[</span><span class="s">&#39;peak&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hit</span><span class="p">[</span><span class="s">&#39;peak&#39;</span><span class="p">])</span>
+                
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">peaks</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">grps</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                    <span class="n">peaks</span><span class="p">[</span><span class="n">grps</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">peaks</span><span class="p">[</span><span class="n">grps</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hit</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">peaks</span>
+    <span class="k">return</span> <span class="n">mem</span><span class="o">.</span><span class="n">getOrSet</span><span class="p">(</span><span class="n">setPeaks</span><span class="p">,</span>
+                        <span class="n">onfail</span> <span class="o">=</span> <span class="s">&#39;compute&#39;</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="mapAllGenes"><a class="viewcode-back" href="../../../../api/everySNAKE.peoplefuns.silvana.html#everySNAKE.peoplefuns.silvana.genes.mapAllGenes">[docs]</a><span class="k">def</span> <span class="nf">mapAllGenes</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">setAllGenes</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+       <span class="n">allPeaks</span> <span class="o">=</span> <span class="n">getPeaks</span><span class="p">()</span>
+       <span class="n">all_results</span> <span class="o">=</span> <span class="p">{}</span>
+       <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">20</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s">&#39;X&#39;</span><span class="p">]:</span>
+           <span class="k">print</span> <span class="s">&#39;Parsing Chromosome: chr{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
+           <span class="n">genes_dict</span> <span class="o">=</span> <span class="p">{}</span>
+           <span class="n">all_results</span><span class="p">[</span><span class="s">&#39;chr{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">)]</span> <span class="o">=</span> <span class="n">genes_dict</span>
+           <span class="n">chrgenes</span> <span class="o">=</span> <span class="n">getTrackChrGenes</span><span class="p">(</span><span class="o">**</span><span class="n">mem</span><span class="o">.</span><span class="n">sr</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">num</span> <span class="o">=</span> <span class="n">num</span><span class="p">))</span>
+
+           <span class="n">peaks</span> <span class="o">=</span> <span class="n">allPeaks</span><span class="p">[</span><span class="s">&#39;chr{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">)]</span>
+           <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chrgenes</span><span class="p">):</span>
+               <span class="n">name</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">]</span>
+               <span class="n">startpos</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;strand&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span>
+               <span class="n">hits</span> <span class="o">=</span> <span class="p">[]</span>
+               <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">peaks</span><span class="p">:</span>
+                   <span class="n">stranded_offset</span> <span class="o">=</span><span class="n">array</span><span class="p">([</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;strand&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span>  <span class="o">-</span> <span class="n">startpos</span><span class="p">),</span>
+                                           <span class="n">g</span><span class="p">[</span><span class="s">&#39;strand&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">startpos</span><span class="p">)])</span>
+                   <span class="k">if</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">stranded_offset</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">2000</span> \
+                           <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">stranded_offset</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+                       <span class="n">stranded_offset</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+                       <span class="n">hits</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s">&#39;peak_info&#39;</span><span class="p">:</span><span class="n">p</span><span class="p">,</span>
+                                  <span class="s">&#39;peak_stranded_offset&#39;</span><span class="p">:</span><span class="n">stranded_offset</span><span class="p">})</span>
+               
+               <span class="n">hits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span><span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s">&#39;peak_stranded_offset&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+               <span class="n">gene_object</span> <span class="o">=</span> <span class="p">{</span>
+                   <span class="s">&#39;dnase_peaks&#39;</span><span class="p">:</span><span class="n">hits</span><span class="p">,</span>
+                   <span class="s">&#39;name&#39;</span><span class="p">:</span><span class="n">name</span><span class="p">,</span>
+                   <span class="s">&#39;gene_info&#39;</span><span class="p">:</span><span class="n">g</span><span class="p">,</span>
+                   <span class="s">&#39;start&#39;</span><span class="p">:</span><span class="n">g</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">],</span>
+                   <span class="s">&#39;end&#39;</span><span class="p">:</span><span class="n">g</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">],</span>
+                   <span class="s">&#39;strand&#39;</span><span class="p">:</span><span class="n">g</span><span class="p">[</span><span class="s">&#39;strand&#39;</span><span class="p">]</span>
+                   <span class="p">}</span>
+               <span class="n">genes_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">gene_object</span>
+
+               <span class="k">if</span> <span class="p">(</span><span class="n">mod</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                   <span class="k">print</span> <span class="s">&#39;Gene {0}: {1}, {2} hits&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">g</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">))</span>
+       
+       <span class="k">return</span> <span class="n">all_results</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">mem</span><span class="o">.</span><span class="n">getOrSet</span><span class="p">(</span><span class="n">setAllGenes</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+</div>
+<div class="viewcode-block" id="plotPeaks"><a class="viewcode-back" href="../../../../api/everySNAKE.peoplefuns.silvana.html#everySNAKE.peoplefuns.silvana.genes.plotPeaks">[docs]</a><span class="k">def</span> <span class="nf">plotPeaks</span><span class="p">(</span><span class="n">num</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">cb.utils.plots</span> <span class="kn">as</span> <span class="nn">myplots</span>
+
+    <span class="k">def</span> <span class="nf">setHist</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+     <span class="n">peaks</span> <span class="o">=</span> <span class="n">getPeaks</span><span class="p">()[</span><span class="s">&#39;chr{0}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num</span><span class="p">)]</span>
+     <span class="n">proms</span> <span class="o">=</span> <span class="n">getTrackChrPromoters</span><span class="p">(</span><span class="n">num</span> <span class="o">=</span> <span class="n">num</span><span class="p">)</span>
+     
+     <span class="n">all_hits</span> <span class="o">=</span> <span class="n">zeros</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+     <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">proms</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+         <span class="n">mid</span> <span class="o">=</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+         <span class="n">deltas</span> <span class="o">=</span> <span class="p">[]</span>
+         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">peaks</span><span class="p">:</span>
+             <span class="n">pmid</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;start&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="s">&#39;end&#39;</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+             <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">pmid</span> <span class="o">-</span> <span class="n">mid</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5000</span><span class="p">:</span>
+                 <span class="n">deltas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pmid</span> <span class="o">-</span> <span class="n">mid</span><span class="p">)</span>
+         <span class="n">hits</span><span class="p">,</span> <span class="n">bin_offsets</span> <span class="o">=</span> <span class="n">histogram</span><span class="p">(</span><span class="n">deltas</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">5000</span><span class="p">,</span><span class="mi">5000</span><span class="p">])</span>
+         <span class="n">all_hits</span> <span class="o">+=</span> <span class="n">hits</span><span class="p">;</span>
+     <span class="k">return</span> <span class="n">bin_offsets</span><span class="p">,</span> <span class="n">all_hits</span><span class="p">;</span>
+    <span class="n">bin_offsets</span><span class="p">,</span> <span class="n">hits</span> <span class="o">=</span> <span class="n">mem</span><span class="o">.</span><span class="n">getOrSet</span><span class="p">(</span><span class="n">setHist</span><span class="p">,</span> 
+                                     <span class="n">num</span> <span class="o">=</span> <span class="n">num</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">myplots</span><span class="o">.</span><span class="n">fignum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;distance from promoter&#39;</span><span class="p">)</span>
+    <span class="c">#ax.set_xticks(bin_offsets)</span>
+    <span class="c">#ax.set_xticklabels([&#39;{0}&#39;.format(e) for e in bin_offsets])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;counts&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bin_offsets</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">hits</span><span class="p">)</span>
+    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../../index.html">everySnake .1 documentation</a> &raquo;</li>
+          <li><a href="../../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../../everySNAKE.html" >everySNAKE</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Ben Holmes.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

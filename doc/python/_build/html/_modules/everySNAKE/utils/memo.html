@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>everySNAKE.utils.memo &mdash; everySnake .1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="everySnake .1 documentation" href="../../../index.html" />
+    <link rel="up" title="everySNAKE" href="../../everySNAKE.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">everySnake .1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../everySNAKE.html" accesskey="U">everySNAKE</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for everySNAKE.utils.memo</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Write variables to common blocks and the hardrive to</span>
+<span class="sd">increase efficiency of frequently called functions</span>
+
+
+
+<span class="sd">#Basically, getorset can do three things</span>
+<span class="sd">#  1: SET the stored value for the output of a function</span>
+<span class="sd">#  2: GET the stored value for the output of function</span>
+<span class="sd">#  3: UPDATE a new value without calling the function</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+
+
+<span class="kn">import</span> <span class="nn">inspect</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">pickle</span><span class="o">,</span> <span class="nn">cPickle</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">everySNAKE</span> <span class="kn">import</span> <span class="n">config</span> <span class="k">as</span> <span class="n">cfg</span>
+
+<span class="c">#reset level constants</span>
+<span class="n">RESET_NONE</span><span class="o">=</span><span class="mi">0</span>
+<span class="n">RESET_ONE_DEEP</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">RESET_ALL_DEEP</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">verbose_utils</span> <span class="o">=</span> <span class="bp">True</span>
+
+ 
+<div class="viewcode-block" id="getOrSet"><a class="viewcode-back" href="../../../api/everySNAKE.utils.html#everySNAKE.utils.memo.getOrSet">[docs]</a><span class="k">def</span> <span class="nf">getOrSet</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">The workhorse of the memo module.</span>
+
+<span class="sd">Intended usage is basically:</span>
+
+<span class="sd">-------</span>
+
+<span class="sd">def getSomeComputedValue( [...=...], **kwargs):</span>
+
+<span class="sd">  def setSomeComputedValue(**kwargs):</span>
+<span class="sd">    ...</span>
+<span class="sd">    [Do some expensive computation here]</span>
+<span class="sd">    ...</span>
+<span class="sd">    return [result of expensive computation]</span>
+
+<span class="sd">  return memo.getOrSet(setSomeComputedValue,\</span>
+<span class="sd">      **mem.rc(kwargs, </span>
+<span class="sd">               name=[some function of kwargs or other inputs],</span>
+<span class="sd">               [...]</span>
+<span class="sd">               ))</span>
+
+<span class="sd">--------</span>
+
+<span class="sd">Where memo.getOrSet simply serves to wrap and save output from  </span>
+<span class="sd">setSomeComputedValue so that later calls to getSomeComputedValue </span>
+<span class="sd">will not have to recompute it.</span>
+
+<span class="sd">KWARGS:</span>
+<span class="sd">reset    [False] -   reset &quot;function&quot;</span>
+<span class="sd">register [&#39;a&#39;]   -   reserved spot for the current output in memory.</span>
+<span class="sd">name     [register]- reserved sport for the current output on disk.</span>
+<span class="sd">hardcopy [True]  -   save a hardcopy on disk.</span>
+<span class="sd">np       [False] -   save data in an efficient numpy serialized form. (good for arrays)</span>
+<span class="sd">update   [None]  -   if non-null, instead of calling function, use mock output</span>
+<span class="sd">                     in update.</span>
+<span class="sd">hard_reset [False]-  demand user input to actually reset the function.</span>
+<span class="sd">                     (intended for tricky to compute functions)</span>
+
+<span class="sd">&#39;&#39;&#39;</span>
+  <span class="n">reset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+  <span class="n">register</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;register&#39;</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)</span>
+  <span class="n">name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">,</span><span class="n">register</span><span class="p">)</span>
+  <span class="n">hardcopy</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;hardcopy&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+  <span class="n">np</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;np&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+  <span class="n">update</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;update&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+  <span class="n">on_fail</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;on_fail&#39;</span><span class="p">,</span> <span class="s">&#39;compute&#39;</span><span class="p">)</span>
+  <span class="n">hard_reset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;hard_reset&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+  <span class="n">caller_name</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+
+  
+  
+  <span class="k">if</span> <span class="n">update</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="n">_write</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">update</span><span class="p">,</span>  <span class="n">hardcopy</span> <span class="o">=</span> <span class="n">hardcopy</span><span class="p">,</span> <span class="n">np</span> <span class="o">=</span> <span class="n">np</span><span class="p">,</span>
+          <span class="n">register</span> <span class="o">=</span> <span class="n">register</span><span class="p">,</span> <span class="n">caller_name</span> <span class="o">=</span> <span class="n">caller_name</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="ow">not</span> <span class="n">reset</span><span class="p">:</span>
+    <span class="n">out</span><span class="p">,</span> <span class="n">sxs</span> <span class="o">=</span> <span class="n">_read</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span> <span class="n">hardcopy</span> <span class="o">=</span> <span class="n">hardcopy</span><span class="p">,</span> <span class="n">np</span> <span class="o">=</span> <span class="n">np</span><span class="p">,</span> 
+                    <span class="n">register</span> <span class="o">=</span> <span class="n">register</span><span class="p">,</span> <span class="n">caller_name</span> <span class="o">=</span> <span class="n">caller_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sxs</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">on_fail</span> <span class="o">==</span> <span class="s">&#39;compute&#39;</span><span class="p">:</span> 
+        <span class="k">print</span> <span class="s">&#39;memo.py:</span><span class="se">\n</span><span class="s">  Fetch failed for {0}, name: {1}</span><span class="se">\n</span><span class="s">  &quot;compute&quot; flag is set&#39;</span><span class="o">.</span>\
+            <span class="n">format</span><span class="p">(</span><span class="n">caller_name</span><span class="p">,</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">reset</span> <span class="o">=</span> <span class="bp">True</span>
+      <span class="k">else</span><span class="p">:</span> <span class="k">assert</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#39;Data recovery failed for name &#39;</span> <span class="o">+</span> <span class="n">caller_name</span>
+
+  <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">hard_reset</span><span class="p">:</span>
+        <span class="n">user_inp</span> <span class="o">=</span> <span class="nb">raw_input</span><span class="p">(</span><span class="s">&#39;&#39;&#39;</span>
+<span class="s">This appears to be a hard function to compute ({0}:{1})</span>
+<span class="s">Really Reset? (y/n)</span>
+<span class="s">&#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">caller_name</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="n">user_inp</span> <span class="o">==</span> <span class="s">&#39;y&#39;</span>
+
+    <span class="n">out</span> <span class="o">=</span> <span class="n">function</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">_write</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">out</span><span class="p">,</span>  <span class="n">hardcopy</span> <span class="o">=</span> <span class="n">hardcopy</span><span class="p">,</span> <span class="n">np</span> <span class="o">=</span> <span class="n">np</span><span class="p">,</span>
+          <span class="n">register</span> <span class="o">=</span> <span class="n">register</span><span class="p">,</span> <span class="n">caller_name</span> <span class="o">=</span> <span class="n">caller_name</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">out</span>
+    
+
+
+</div>
+<div class="viewcode-block" id="claim_reset"><a class="viewcode-back" href="../../../api/everySNAKE.utils.html#everySNAKE.utils.memo.claim_reset">[docs]</a><span class="k">def</span> <span class="nf">claim_reset</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">verbose_utils</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;&#39;&#39;Resetting: </span><span class="se">\n</span><span class="s">{0}</span><span class="se">\n</span><span class="s">&#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">])</span>
+
+
+</div>
+<div class="viewcode-block" id="reconcile"><a class="viewcode-back" href="../../../api/everySNAKE.utils.html#everySNAKE.utils.memo.reconcile">[docs]</a><span class="k">def</span> <span class="nf">reconcile</span><span class="p">(</span><span class="n">kw_new</span><span class="p">,</span> <span class="n">kw_old</span> <span class="o">=</span> <span class="p">{},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Reconcile new keywords into a kwargs object and check for any</span>
+<span class="sd">forced resets in the active routine.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+    <span class="n">d0</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kw_old</span><span class="p">)</span>
+    <span class="n">d0</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw_new</span><span class="p">)</span>
+    <span class="n">d0</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">d0</span><span class="p">[</span><span class="s">&#39;reset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_make_reset_level</span><span class="p">(</span><span class="o">**</span><span class="n">d0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d0</span>
+</div>
+<div class="viewcode-block" id="sub_reconcile"><a class="viewcode-back" href="../../../api/everySNAKE.utils.html#everySNAKE.utils.memo.sub_reconcile">[docs]</a><span class="k">def</span> <span class="nf">sub_reconcile</span><span class="p">(</span><span class="n">kw_new</span><span class="p">,</span> <span class="n">kw_old</span> <span class="o">=</span> <span class="p">{},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Reconcile new keywords into a kwargs object and check for any</span>
+<span class="sd">forced resets in the active routine. If reset_level is 2, set </span>
+<span class="sd">the reset level to zero in order to halt the reset cascade.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+    <span class="n">d0</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">kw_old</span><span class="p">)</span>
+    <span class="n">d0</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kw_new</span><span class="p">)</span>
+    <span class="n">d0</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">d0</span><span class="p">[</span><span class="s">&#39;reset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_make_sub_reset_level</span><span class="p">(</span><span class="o">**</span><span class="n">d0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d0</span>
+</div>
+<span class="n">sr</span> <span class="o">=</span> <span class="n">sub_reconcile</span> 
+<span class="n">rc</span> <span class="o">=</span> <span class="n">reconcile</span>
+ 
+
+<span class="k">def</span> <span class="nf">_write</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span><span class="n">value</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">hardcopy</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">np</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+          <span class="n">register</span><span class="o">=</span> <span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="n">caller_name</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> <span class="n">name</span> <span class="o">=</span> <span class="n">register</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">caller_name</span><span class="p">:</span> <span class="n">caller_name</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">savename</span> <span class="o">=</span> <span class="n">caller_name</span> <span class="o">+</span> <span class="s">&#39;_&#39;</span> <span class="o">+</span><span class="n">name</span> <span class="o">+</span> <span class="s">&#39;.memo&#39;</span>
+ 
+    <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;lastname_&#39;</span><span class="o">+</span><span class="n">caller_name</span> <span class="o">+</span><span class="n">register</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;last_&#39;</span><span class="o">+</span><span class="n">caller_name</span><span class="o">+</span><span class="n">register</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">if</span> <span class="n">hardcopy</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">getTempPath</span><span class="p">(),</span> <span class="n">savename</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;w&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="p">:</span>
+            <span class="n">save</span><span class="p">(</span> <span class="n">f</span><span class="p">,</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">hardcopy</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span><span class="n">np</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+         <span class="n">register</span> <span class="o">=</span> <span class="s">&#39;a&#39;</span><span class="p">,</span> <span class="n">caller_name</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> <span class="n">name</span> <span class="o">=</span> <span class="n">register</span>
+    <span class="n">sxs</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">caller_name</span><span class="p">:</span><span class="n">caller_name</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">lname</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;lastname_&#39;</span><span class="o">+</span><span class="n">caller_name</span><span class="o">+</span><span class="n">register</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">lname</span> <span class="o">==</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="n">register</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;last_&#39;</span><span class="o">+</span><span class="n">caller_name</span><span class="o">+</span><span class="n">register</span><span class="p">],</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">hardcopy</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">sxs</span>
+        <span class="n">savename</span> <span class="o">=</span> <span class="n">caller_name</span> <span class="o">+</span><span class="s">&#39;_&#39;</span><span class="o">+</span><span class="n">name</span> <span class="o">+</span> <span class="s">&#39;.memo&#39;</span>
+        <span class="n">path</span> <span class="o">=</span>  <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">getTempPath</span><span class="p">(),</span><span class="n">savename</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hardcopy</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">getTempPath</span><span class="p">(),</span> <span class="n">savename</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+              <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+              <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">sxs</span>
+            <span class="k">if</span> <span class="n">np</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="n">sxs</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span> <span class="n">f</span><span class="p">)</span>
+                <span class="n">sxs</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    
+        <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;lastname_&#39;</span><span class="o">+</span><span class="n">caller_name</span> <span class="o">+</span><span class="n">register</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="nb">globals</span><span class="p">()[</span><span class="s">&#39;last_&#39;</span><span class="o">+</span><span class="n">caller_name</span><span class="o">+</span><span class="n">register</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span>
+
+    <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">sxs</span>
+
+
+
+
+<span class="k">def</span> <span class="nf">_make_reset_level</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="sd">&#39;&#39;&#39;Get the reset level for the current function&#39;&#39;&#39;</span>
+  <span class="n">reset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="k">if</span> <span class="s">&#39;resets&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span> 
+    <span class="n">reset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;resets&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span> <span class="n">reset</span><span class="p">)</span> 
+    <span class="c">#raise Exception()</span>
+  <span class="k">return</span> <span class="n">reset</span>
+
+<span class="k">def</span> <span class="nf">_make_sub_reset_level</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+  <span class="n">reset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="k">if</span> <span class="s">&#39;resets&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span> 
+    <span class="n">reset</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;resets&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">],</span> <span class="n">reset</span><span class="p">)</span> 
+  <span class="k">return</span> <span class="n">mod</span><span class="p">(</span><span class="n">reset</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">everySnake .1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../everySNAKE.html" >everySNAKE</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Ben Holmes.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>
