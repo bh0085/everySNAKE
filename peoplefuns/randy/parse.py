@@ -1,3 +1,20 @@
+''' 
+A few of scripts to gather kmer frequencies from a fasta file "library"
+containing mRNA sequences.
+
+Basic Usage (from the python interpreter):
+
+import everySNAKE.peoplefuns.randy.parse as rparse
+rparse.restoreResultsFromJSON('mouse', tissue_type = None)
+kmers = rparse.getKMERsForName('mouse', tissue_type = None)
+rparse.view('mouse', tissue_type = None)
+
+Using this package requires
+1. that the user install everySNAKE (github.com/bh0085/everysnake)
+2. that the user have numpy and biopython
+3. (if the view routine will be called) that the user have matplotlib and scipy.
+'''
+
 lookups = {'mouse':'/data/blast/test_m_est.fa.gz'}
 
 #Biopython module SeqIO will handle parsing.
@@ -50,8 +67,17 @@ from records matching "term".
     
     name = libname if tissue_term ==None \
         else '{0}_tissue={1}'.format(libname,tissue_term) 
-
-    return mem.getOrSet(setKMERsForName, 
+    
+    if kwargs.has_key('restored'):
+        output = kwargs['restored']
+        mem.getOrSet(setKMERsForName, 
+                        **mem.rc(kwargs,
+                                 libname = libname,
+                                 tissue_term = tissue_term,
+                                 name = name,
+                                 update = output))
+    else:
+        return mem.getOrSet(setKMERsForName, 
                         **mem.rc(kwargs,
                                  libname = libname,
                                  tissue_term = tissue_term,
@@ -83,14 +109,30 @@ def getTranslatedForName(libname, **kwargs):
 
 def writeResultsToJSON(libname, tissue_term = None):
     '''Write computed kmer for lib name.'''
+
     kmers = getKMERsForName(libname, tissue_term = tissue_term)
-    f = open('{0}mers_tt={1}.json'.format(k,tissue_term),'w')
+    f = open('{2}_{0}mers_tt={1}.json'.format(k,tissue_term,libname),'w')
     f.write(json.dumps(kmers))
     f.close()
+
+def restoreResultsFromJSON(libname, tissue_term = None):
+    '''Get kmers from a json file. Place them into memory so that "getKMERs()"
+will work even if the user does not have the fasta library from which
+the dataset was generated.'''
+
+    f = open('{2}_{0}mers_tt={1}.json'.format(k,tissue_term,libname))
+    data = json.loads(f.read())
+    restored = getKMERsForName(libname = libname, tissue_term = tissue_term, 
+                               restored = data)
+    
 
 from numpy import *
 import numpy as np
 def view(libname):
+    '''
+    Generate a few summary figures to sanity check the library
+biases that will skew this data.
+'''
     import matplotlib.pyplot as plt
     import scipy.stats as ss
     f1= plt.figure(1)

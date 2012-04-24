@@ -79,6 +79,7 @@ hard_reset [False]-  demand user input to actually reset the function.
   if update != None:
     _write(name = name, value = update,  hardcopy = hardcopy, np = np,
           register = register, caller_name = caller_name)
+    out = update
   elif not reset:
     out, sxs = _read(name = name, hardcopy = hardcopy, np = np, 
                     register = register, caller_name = caller_name)
