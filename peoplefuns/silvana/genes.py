@@ -3,24 +3,27 @@ import track
 from numpy import *
 import os
 import numpy as np
-mousefile = cfg.dataPath('silvana/mouse_genes.bed')
+
+#bedfile storing annotations (genes, promoters...)
+bedfile = cfg.dataPath('silvana/mouse_genes.bed')
+#peakfile storing dnase narrowpeaks.
 peakfile = cfg.dataPath('silvana/dhs.narrowPeak')
 
 
 def getTrackChrPromoters(**kwargs):
     '''
 Get all of the forward promoter from a bed file
-on a given chromosome>
+on a given chromosome.
 
 kwargs
 num:   chromosome number 
-fname: bedfile path
+fname: bedfile path (uses global bedfile as the default)
 
 returns
 a list of the coordinates of each forward promoter.
 '''
     def setTrackChrPromoters(**kwargs):
-        fname = kwargs.get('fname', mousefile)
+        fname = kwargs.get('fname', bedfile)
         num = kwargs.get('num', 1)
         t = track.load(fname);
         chromosome_data = t.read('chr{0}'.format(num))
@@ -33,24 +36,24 @@ a list of the coordinates of each forward promoter.
     
     return mem.getOrSet(setTrackChrPromoters,
                         onfail = 'compute',
-                        name = '{0}_{1}'.format(kwargs.get('fname',os.path.basename(mousefile)),
+                        name = '{0}_{1}'.format(kwargs.get('fname',os.path.basename(bedfile)),
                                                 kwargs.get('num', 1)))
 
 
 def getTrackChrGenes(**kwargs):
     '''
-Get all of th genes from a bed file
+Get all of the genes from a bed file
 on a given chromosome.
 
 kwargs
 num:   chromosome number 
-fname: bedfile path
+fname: bedfile path (uses global bedfile as the default)
 
 returns
 a list of attributes for every gene.
 '''
     def setTrackChrGenes(**kwargs):
-        fname = kwargs.get('fname', mousefile)
+        fname = kwargs.get('fname', bedfile)
         num = kwargs.get('num', 1)
         t = track.load(fname);
         chromosome_data = t.read('chr{0}'.format(num))
@@ -60,7 +63,7 @@ a list of attributes for every gene.
     return mem.getOrSet(setTrackChrGenes,
                         **mem.rc( kwargs,
                                   onfail = 'compute',
-                                  name = '{0}_{1}'.format(kwargs.get('fname',os.path.basename(mousefile)),
+                                  name = '{0}_{1}'.format(kwargs.get('fname',os.path.basename(bedfile)),
                                                           kwargs.get('num', 1))
                                   ))
 
@@ -112,17 +115,25 @@ def mapAllGenes(**kwargs):
     def setAllGenes(**kwargs):
        allPeaks = getPeaks()
        all_results = {}
+
+       #if you were running for a larger dataset you might want to 
+       #break this loop after a single iteration and just choose a chromosome
        for num in range(1,20) + ['X']:
            print 'Parsing Chromosome: chr{0}'.format(num)
            genes_dict = {}
            all_results['chr{0}'.format(num)] = genes_dict
-           chrgenes = getTrackChrGenes(**mem.sr(kwargs, num = num))
 
+           #get the genes on a chromosome
+           chrgenes = getTrackChrGenes(**mem.sr(kwargs, num = num))
+           #get the peaks on a chromosome
            peaks = allPeaks['chr{0}'.format(num)]
+
            for i, g in enumerate(chrgenes):
                name = g['name']
                startpos = g['start'] if g['strand'] == 1 else g['end']
                hits = []
+               
+               #list features near this gene.
                for p in peaks:
                    stranded_offset =array([ g['strand'] * (p['start']  - startpos),
                                            g['strand'] * (p['end'] - startpos)])
@@ -132,6 +143,7 @@ def mapAllGenes(**kwargs):
                        hits.append({'peak_info':p,
                                   'peak_stranded_offset':stranded_offset})
                
+               #store some extra information in the dictionary that we'll output
                hits = sorted(hits,key = lambda x: x['peak_stranded_offset'][0])
                gene_object = {
                    'dnase_peaks':hits,
